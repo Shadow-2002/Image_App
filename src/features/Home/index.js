@@ -19,7 +19,7 @@ import {
     launchImageLibrary
 } from 'react-native-image-picker';
 
-export default function Home() {
+export default function Home({navigation}) {
 
     const [modalVisible, setModalVisible] = useState(false);
     const [file, setFile] = useState({});
@@ -123,6 +123,27 @@ export default function Home() {
         setModalVisible(!modalVisible);
     };
 
+    const uploadImage = () => {
+        const data = new FormData();
+        data.append('image', {
+            uri: file.assets[0].uri,
+            type: 'image/jpeg',
+            name: 'image.jpg',
+        });
+
+        fetch('http://192.168.244.26:3000/api/upload-image', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+            body: data,
+        })
+            .then(response => response.json())
+            .then(data => {
+                navigation.navigate('PlayVideo',{Id:`${data.message}`})
+            });
+    };
+
     return (
         <View style={styles.centeredView}>
 
@@ -189,7 +210,7 @@ export default function Home() {
                                 />
                             </View>
                             <View style={{ paddingTop: 30 }}>
-                                <TouchableOpacity style={styles.subbutton} onPress={() => { console.log("Predict") }}>
+                                <TouchableOpacity style={styles.subbutton} onPress={uploadImage}>
                                     <Text style={{ color: "white", fontWeight: "bold", fontSize: 17 }}>Predict</Text>
                                 </TouchableOpacity>
                             </View>

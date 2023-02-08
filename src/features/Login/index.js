@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState,useContext } from "react";
 import { TextInput, View, StyleSheet, ScrollView, Text, TouchableOpacity } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome"
+import { UserContext } from "../../../App";
 
 //Validation
 import { Formik } from "formik";
@@ -13,8 +14,35 @@ function Login({ navigation }) {
     const [passcount, setpasscount] = useState(0);
     const [error, seterror] = useState("");
 
+    const { setloggedIn } = useContext(UserContext);
+
     const Loginfun = (val) => {
-        console.log(val);
+
+        fetch('http://192.168.244.26:3000/login', {
+            method: 'POST',
+            headers: {
+                Accept: 'application/json',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                username: val.email,
+                password: val.password,
+            }),
+        })
+            .then((response) => response.json())
+            .then((responseJson) => {
+                console.log(responseJson.message);
+                if (responseJson.message === 'Success') {
+                    console.log("Success");
+                    setloggedIn(true);
+                } else {
+                    console.log("error");
+                }
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+
     }
 
     return (
