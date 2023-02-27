@@ -1,29 +1,47 @@
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 import os
+from flask_cors import CORS
+from flask_pymongo import PyMongo
+from flask_bcrypt import Bcrypt
+from bson.objectid import ObjectId
+import jwt
+import datetime
+
 
 app = Flask(__name__)
+CORS(app,resources={r'/*': {'origins': '*'}})
 
-logged_in = False
+app.config['MONGO_URI'] = 'mongodb://localhost:27017/ImageApp'
+mongo = PyMongo(app)
+bcrypt = Bcrypt(app)
+app.config['SECRET_KEY'] = 'thisisthesecretkey'
 
-@app.route('/api/login-status')
-def get_login_status():
-  return jsonify({'loggedIn': logged_in})
-
+def create_token(user_id):
+    payload = {'user_id': str(user_id), 'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)}
+    token = jwt.encode(payload, app.config['SECRET_KEY'])
+    return token
 
 @app.route('/login', methods=['POST'])
 def login():
-    data = request.get_json()
-    username = data.get('username')
-    password = data.get('password')
-
-    if username == 'user' and password == 'pass':
-        return jsonify({'message': 'Success'})
+    print(request)
+    user = mongo.db.users.find_one({'email': request.json['email']})
+    if user and bcrypt.check_password_hash(user['password'], request.json['password']):
+        token = create_token(user['_id'])
+        return jsonify({'token': token}), 200
     else:
-        global logged_in
-        logged_in = True
-        # return jsonify({'message': 'Failure'})
-        return jsonify({'message': 'Success'})
+        return jsonify({'message': 'Invalid credentials'}), 401
+
+@app.route('/register', methods=['POST'])
+def register():
+    user = mongo.db.users.find_one({'email': request.json['email']})
+    if user:
+        return jsonify({'message': 'User already exists'}), 400
+    else:
+        password = bcrypt.generate_password_hash(request.json['password']).decode('utf-8')
+        user_id = mongo.db.users.insert_one({'email': request.json['email'], 'password': password})
+        token = create_token(user_id)
+        return jsonify({'token': token}), 201
 
 @app.route("/api/upload-image", methods=["POST"])
 def upload_image():
@@ -38,4 +56,4 @@ def index():
     return jsonify({'message': 'Success'})
 
 if __name__ == '__main__':
-    app.run(host="192.168.244.26",port="3000",debug=True)
+    app.run(debug=True,host='192.168.244.26',port=3000)

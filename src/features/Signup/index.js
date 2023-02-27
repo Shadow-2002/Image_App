@@ -8,27 +8,24 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
-import axios from 'axios';
-import {useNavigation} from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {UserContext} from '../../../App';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 //Validation
 import {Formik} from 'formik';
 import * as yup from 'yup';
 
-function Login() {
+function Signup({navigation}) {
   const [hidePass, setHidePass] = useState([true, false]);
   const [fonticon, setfonticon] = useState(['eye', 'eye-slash']);
   const [passcount, setpasscount] = useState(0);
   const [error, seterror] = useState('');
 
-  const navigation = useNavigation();
+  const {setloggedIn} = useContext(UserContext);
 
-  const [loggedIn, setloggedIn] = useContext(UserContext);
-
-  const Loginfun = async val => {
-    const endpoint = 'http://192.168.244.26:3000/login';
+  const Signupfun = async val => {
+    const endpoint = 'http://192.168.244.26:3000/register';
     const data = {
       email: val.email,
       password: val.password,
@@ -36,12 +33,14 @@ function Login() {
     try {
       const response = await axios.post(endpoint, data);
       const token = response.data.token;
-      await AsyncStorage.setItem('token', token);
-      console.log(AsyncStorage.getItem('token'))
-      setloggedIn(true);
+      if (token) {
+        navigation.navigate('Login');
+      } else {
+        seterror('Error Occured');
+      }
     } catch (error) {
       console.log(error.message);
-      seterror('Invalid email or password');
+      seterror('User already exists');
     }
   };
 
@@ -49,12 +48,12 @@ function Login() {
     <View style={{flex: 1}}>
       <ScrollView style={{flex: 1}} contentContainerStyle={{flexGrow: 1}}>
         <View style={styles.container}>
-          <Text style={styles.headingtext}>Welcome back</Text>
-          <Text style={styles.subtext}>Sign in to your account</Text>
+          <Text style={styles.headingtext}>Get started</Text>
+          <Text style={styles.subtext}>Create a new account</Text>
           <Formik
             initialValues={{email: '', password: ''}}
             onSubmit={values => {
-              Loginfun(values);
+              Signupfun(values);
             }}
             validationSchema={yup.object().shape({
               email: yup.string().email().required('Email id is required'),
@@ -140,7 +139,7 @@ function Login() {
                         fontWeight: 'bold',
                         fontSize: 17,
                       }}>
-                      Login
+                      Signup
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -150,13 +149,11 @@ function Login() {
                     justifyContent: 'center',
                     paddingTop: 25,
                   }}>
-                  <Text style={{color: '#7E7E7E'}}>
-                    Don't have an account ?{' '}
-                  </Text>
+                  <Text style={{color: '#7E7E7E'}}>Have an account ? </Text>
                   <Text
                     style={{color: '#949392', textDecorationLine: 'underline'}}
-                    onPress={() => navigation.navigate('Signup')}>
-                    Sign Up Now
+                    onPress={() => navigation.navigate('Login')}>
+                    Sign In Now
                   </Text>
                 </View>
               </View>
@@ -211,4 +208,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default Login;
+export default Signup;
